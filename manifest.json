@@ -4,9 +4,9 @@
     "version": "1.0",
     "description": "A chrome extension to help people with dyslexia and color blindness access web pages with more ease.",
     "icons": { 
-      "16": "assets/images/dino_16px.png",
-      "48": "assets/images/dino_48px.png",
-      "128": "assets/images/dino_128px.png" 
+      "16": "assets/images/octo_16.png",
+      "48": "assets/images/octo48.png",
+      "128": "assets/images/octo128.png" 
     },
     "action": {
       "default_popup": "popup.html"
