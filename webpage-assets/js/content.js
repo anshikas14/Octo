@@ -95,28 +95,21 @@ window.addEventListener(
         msg.rate = request.rate;
         synth.speak(msg);
       } else if (action === "text-to-speech-selected") {
-        {
-            const selectedText = window.getSelection().toString();
-            if (!selectedText) return;
-        
-            const rate = request.rate || 1;
-            const repeat = request.repeat || 1;
-        
-            function speakText(text, count) {
-              if (count === 0) return;
-        
-              const utterance = new SpeechSynthesisUtterance(text);
-              utterance.rate = rate;
-        
-              utterance.onend = function () {
-                speakText(text, count - 1); // Repeat until done
-              };
-        
-              speechSynthesis.speak(utterance);
-            }
-        
-            speakText(selectedText, repeat);
-          };
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        let txt = "";
+        if (window.getSelection) {
+          txt = window.getSelection();
+        } else if (window.document.getSelection) {
+          txt = window.document.getSelection();
+        } else if (window.document.selection) {
+          txt = window.document.selection.createRange().text;
+        }
+        const msg = new SpeechSynthesisUtterance(txt.toString());
+        msg.rate = request.rate;
+
+        synth.speak(msg);
         
       } else if (action === "stop-speech") {
         if (synth.speaking) {
