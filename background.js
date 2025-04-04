@@ -106,7 +106,7 @@ for (let i = 0; i < textToSpeechHelper.length; i++) {
 const textToSpeachSelected = document.getElementsByClassName(
   "text-to-speech-selected"
 );
-for (let i = 0; i < textToSpeachSelected.length; i++) {
+for (let i = 0; i < 2* textToSpeachSelected.length; i++) {
   textToSpeachSelected[i].addEventListener("click", function (e) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
@@ -117,14 +117,14 @@ for (let i = 0; i < textToSpeachSelected.length; i++) {
   });
 }
 
-const textToSpeechStop = document.getElementsByClassName("stop-speech");
+/*const textToSpeechStop = document.getElementsByClassName("stop-speech");
 for (let i = 0; i < textToSpeechStop.length; i++) {
   textToSpeechStop[i].addEventListener("click", function (e) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, { action: "stop-speech" });
     });
   });
-}
+}*/
 
 const links = document.getElementsByClassName("link");
 for (let i = 0; i < links.length; i++) {
