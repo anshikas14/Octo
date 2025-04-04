@@ -109,23 +109,17 @@ const textToSpeachSelected = document.getElementsByClassName(
 for (let i = 0; i < textToSpeachSelected.length; i++) {
   textToSpeachSelected[i].addEventListener("click", function (e) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "text-to-speech-selected",
-        rate: rate.value,
-      });
+      // Send message twice to read text twice
+      for (let j = 0; j < 2; j++) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: "text-to-speech-selected",
+          rate: rate.value,
+        });
+      }
     });
   });
 }
-for (let i = 0; i < textToSpeachSelected.length; i++) {
-  textToSpeachSelected[i].addEventListener("click", function (e) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "text-to-speech-selected",
-        rate: rate.value,
-      });
-    });
-  });
-}
+
 
 
 const textToSpeechStop = document.getElementsByClassName("stop-speech");
