@@ -106,19 +106,15 @@ for (let i = 0; i < textToSpeechHelper.length; i++) {
 const textToSpeachSelected = document.getElementsByClassName(
   "text-to-speech-selected"
 );
-for (let i = 0; i < textToSpeachSelected.length; i++) {
-  textToSpeachSelected[i].addEventListener("click", function (e) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      // Send message twice to read text twice
-      for (let j = 0; j < 2; j++) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: "text-to-speech-selected",
-          rate: rate.value,
-        });
-      }
-    });
-  });
-}
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action === "text-to-speech-selected") {
+    const repeat = request.repeat || 1;
+    for (let i = 0; i < repeat; i++) {
+      speakSelectedText(request.rate);
+    }
+  }
+});
+
 
 
 
