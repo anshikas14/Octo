@@ -106,7 +106,17 @@ for (let i = 0; i < textToSpeechHelper.length; i++) {
 const textToSpeachSelected = document.getElementsByClassName(
   "text-to-speech-selected"
 );
-for (let i = 0; i < 2* textToSpeachSelected.length; i++) {
+for (let i = 0; i < textToSpeachSelected.length; i++) {
+  textToSpeachSelected[i].addEventListener("click", function (e) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: "text-to-speech-selected",
+        rate: rate.value,
+      });
+    });
+  });
+}
+for (let i = 0; i < textToSpeachSelected.length; i++) {
   textToSpeachSelected[i].addEventListener("click", function (e) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
