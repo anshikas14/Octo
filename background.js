@@ -111,7 +111,8 @@ for (let i = 0; i < textToSpeachSelected.length; i++) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
         action: "text-to-speech-selected",
-        rate: rate.value,
+        rate: parseFloat(rate.value),
+        repeat: 2, // Request to repeat twice
       });
     });
   });
