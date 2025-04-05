@@ -103,6 +103,11 @@ for (let i = 0; i < textToSpeechHelper.length; i++) {
   });
 }
 
+const trial = 0 ; 
+if (trial === 0){
+  return true;
+}
+
 const textToSpeachSelected = document.getElementsByClassName(
   "text-to-speech-selected"
 );
