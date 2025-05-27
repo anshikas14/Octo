@@ -1,283 +1,532 @@
 const synth = window.speechSynthesis;
+let backColor = "";
+let fontColor = "";
+let originalLineHeight = 1;
+let scrollerID = null;
+let originalLinkStyles = new Map();
+let originalParagraphStyles = new Map();
+let italicElements = [];
+let underscoreElements = [];
 
-window.addEventListener(
-  "load",
+// Utility function to safely get elements
+function getElements(tagName) {
+  try {
+    return document.getElementsByTagName(tagName);
+  } catch (error) {
+    console.error(`Error getting ${tagName} elements:`, error);
+    return [];
+  }
+}
+
+// Utility function to safely set style properties
+function setStyleProperty(element, property, value) {
+  try {
+    element.style.setProperty(property, value);
+  } catch (error) {
+    console.error(`Error setting ${property}:`, error);
+  }
+}
+
+// Scroll handling
+function startScroll(interval) {
+  if (scrollerID) {
+    stopScroll();
+  }
   
-  function load(event) {
-    window.removeEventListener("load", load, false);
-    chrome.runtime.onMessage.addListener(function (
-      request,
-      sender,
-      sendResponse
-    ) {
-
-      let backColor = "";
-      let fontColor = "";
-      let originalLineHeight = 1;
-
-      const action = request.action;
-
-      let scrollerID;
-
-      function startScroll(interval){
-      let id = setInterval(function(event) {
-          window.scrollBy(0, 2); //scrollBy function of JS
-          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-              // Reached end of page
-              stopScroll();
-          }
-      }, interval);
-      id();
-      return id;
+  scrollerID = setInterval(() => {
+    try {
+      window.scrollBy(0, 2);
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+        stopScroll();
       }
+    } catch (error) {
+      console.error('Error during scrolling:', error);
+      stopScroll();
+    }
+  }, interval);
+}
 
-      function stopScroll() {
-        clearInterval(scrollerID);
-      }
-     
+function stopScroll() {
+  if (scrollerID) {
+    clearInterval(scrollerID);
+    scrollerID = null;
+  }
+}
 
-      if (action === "fontSize") {
-        const fontSize = request.fontSize;
-        const html = document.querySelector("html");
-        html.style.fontSize = fontSize;
-      } else if (action === "fontStyle") {
-        console.log(request.fontStyle);
-        document.getElementsByTagName("body")[0].setAttribute("id", "fonter");
-        const html = document.querySelector("#fonter");
+// Auto scroll functionality with speed control
+function startAutoScroll(speed) {
+  // Clear any existing scroll interval
+  if (scrollerID) {
+    stopScroll();
+  }
 
-        if (request.fontStyle === "Trebuchet MS") {
-          html.style.setProperty(
-            "font-family",
-            "Castellar, Trebuchet MS, sans-serif"
-          );
-        } else if (request.fontStyle === "Arial") {
-          html.style.setProperty("font-family", "Arial, sans-serif");
-        } else if (request.fontStyle === "Baskerville") {
-          html.style.setProperty("font-family", "Baskerville, serif");
-        } else if (request.fontStyle === "Calibri") {
-          html.style.setProperty("font-family", "Calibri, sans-serif");
-        } else if (request.fontStyle === "Garamond") {
-          html.style.setProperty("font-family", "Garamond, serif");
-        } else if (request.fontStyle === "Verdana") {
-          html.style.setProperty("font-family", "Verdana, sans-serif");
-        } else if (request.fontStyle === "Georgia") {
-          html.style.setProperty("font-family", "Georgia", "serif");
-        } else if (request.fontStyle === "Times New Roman") {
-          html.style.setProperty("font-family", "Times New Roman", "serif");
-        } else if (request.fontStyle === "Helvetica") {
-          html.style.setProperty("font-family", "Helvetica", "sans-serif");
-        } else if (request.fontStyle === "Monaco") {
-          html.style.setProperty("font-family", "Monaco", "Monospace");
-        }
-        else if (request.fontStyle === "OpenSans-Regular") {
-          html.style.setProperty("font-family", "OpenSans-Regular", "sans-serif");
-        }
-        else if (request.fontStyle === "Tahoma") {
-          html.style.setProperty("font-family", "Tahoma,sans-serif");
-        } 
-      }
-      else if (action === "image") {
-        const immgs = document.getElementsByTagName("img");
-        for (let i = 0; i < immgs.length; i++) {
-          immgs[i].style.setProperty("display", "none");
-        }
-      } else if (action === "imageAdd") {
-        const immgs = document.getElementsByTagName("img");
-        for (let i = 0; i < immgs.length; i++) {
-          immgs[i].style.setProperty("display", "block");
-        }
-      } else if (action === "text-to-speech") {
-        if (synth.speaking) {
-          synth.cancel();
-        }
-        const text = document.getElementsByTagName("body")[0].innerText;
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.rate = request.rate;
-        synth.speak(msg);
-      } else if (action === "text-to-speech-selected") {
-        if (synth.speaking) {
-          synth.cancel();
-        }
-        let txt = "";
-        if (window.getSelection) {
-          txt = window.getSelection();
-        } else if (window.document.getSelection) {
-          txt = window.document.getSelection();
-        } else if (window.document.selection) {
-          txt = window.document.selection.createRange().text;
-        }
-        const msg = new SpeechSynthesisUtterance(txt.toString());
-        msg.rate = request.rate;
+  // Set scroll parameters based on speed
+  let interval, scrollAmount;
+  
+  switch(speed) {
+    case 'slow':
+      interval = 50;
+      scrollAmount = 1;
+      break;
+    case 'medium':
+      interval = 30;
+      scrollAmount = 2;
+      break;
+    case 'fast':
+      interval = 10;
+      scrollAmount = 4;
+      break;
+    default:
+      interval = 30;
+      scrollAmount = 2;
+  }
 
-        synth.speak(msg);
-        
-      } else if (action === "stop-speech") {
-        if (synth.speaking) {
-          synth.cancel();
-        }
-      } else if (action === "link-highlight") {
-        const links = document.getElementsByTagName("a");
-        for (let i = 0; i < links.length; i++) {
-          links[i].style.setProperty("background-color", "blue");
-          links[i].style.setProperty("fontSize", "24px");
-        }
-      } else if (action === "link-border-highlight") {
-        const b_links = document.getElementsByTagName("a");
-        for (let i = 0; i < b_links.length; i++) {
-          b_links[i].style.setProperty("border", "2px solid red");
-        }
-      } else if (action === "link-highlight-remove") {
-        const links = document.getElementsByTagName("a");
-        for (let i = 0; i < links.length; i++) {
-          links[i].style.setProperty("background-color", "transparent");
-          links[i].style.setProperty("fontSize", "default");
-          links[i].style.setProperty("border", "none");
-        }
-      } else if (action === "image-reader") {
-        const images = document.getElementsByTagName("img");
-        console.log(images);
-        for (let i = 0; i < images.length; i++) {
-          images[i].addEventListener("mouseover", function (e) {
-            console.log("here");
-            console.log(images[i].alt);
-            const msg = new SpeechSynthesisUtterance(images[i].alt);
-            window.speechSynthesis.speak(msg);
-          });
+  // Log for debugging
+  console.log(`Starting autoscroll with speed: ${speed}, interval: ${interval}ms, amount: ${scrollAmount}px`);
+  
+  // Set up the interval for scrolling
+  scrollerID = setInterval(() => {
+    window.scrollBy(0, scrollAmount);
+    
+    // Stop scrolling when reaching the bottom
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10) {
+      console.log("Reached bottom of page, stopping autoscroll");
+      stopScroll();
+    }
+  }, interval);
+}
 
-          images[i].addEventListener("mouseleave", function (e) {
-            window.speechSynthesis.cancel();
-          });
-        }
-      }
-       else if(action === "light-on-darkmode"){
-        const condi=request.modevalue;
-     
-        if(condi === "darkmode"){
-          
-          document.querySelector("html").style.filter="invert(1) hue-rotate(180deg)";
-          let media = document.querySelectorAll("img, picture, video");
-          media.forEach((mediaItem) => {
-          mediaItem.style.filter="invert(1) hue-rotate(180deg)"
-          })
-        }
-        else if(condi === "lightmode"){
-          document.querySelector("html").style.filter="invert(0) hue-rotate(0deg)";
-          let media = document.querySelectorAll("img, picture, video");
-          media.forEach((mediaItem) => {
-            mediaItem.style.filter="invert(0) hue-rotate(0deg)"
-          })
-        }
-
-     
-
-      }
-      
-      else if (action === "backgroundColor") {
-        backColor === ""
-          ? (backColor =
-              document.getElementsByTagName("body")[0].style.backgroundColor)
-          : null;
-        document
-          .getElementsByTagName("body")[0]
-          .style.setProperty("background-color", request.backgroundColor);
-      } else if (action === "revert-background-color") {
-        document
-          .getElementsByTagName("body")[0]
-          .style.setProperty("background-color", backColor);
-      } else if (action === "fontColor") {
-        console.log(request.fontColor);
-        fontColor === ""
-          ? (fontColor = document.getElementsByTagName("*")[0].style.fontColor)
-          : null;
-        const all = document.getElementsByTagName("*");
-        for (let i = 0; i < all.length; i++) {
-          all[i].style.setProperty("color", request.fontColor);
-        } }
-        else if (action === "revert-Font-color") {
-          const all = document.getElementsByTagName("*")[0];
-          all.style.setProperty("color", fontColor);
-            
-      }
-       else if (action === "para-highlighter") {
-
-        const paras1 = document.getElementsByTagName("p");
-        const paras2 = document.getElementsByTagName("div");
-        const paras = [...paras1, ...paras2];
-        for (let i = 0; i < paras.length; i++) {
-          paras[i].style.setProperty("border", "2px solid orange");
-        }
-      } else if (action === "para-highlighter-remove") {
-        const paras1 = document.getElementsByTagName("p");
-        const paras2 = document.getElementsByTagName("div");
-        const paras = [...paras1, ...paras2];
-        for (let i = 0; i < paras.length; i++) {
-          paras[i].style.setProperty("border", "none");
-        }
-      } else if (action === "para-highlighter-background") {
-        var instance = new Mark(document.querySelector("body"));
-        var RegExp = /./;
-        instance.markRegExp(RegExp, {});
-      } else if (action === "para-highlighter-background-remove") {
-        var context = document.querySelector("body");
-        var instance = new Mark(context);
-        instance.unmark();
-      } else if (action === "select-text") {
-        const word = window.getSelection().toString();
-        if (word !== "") {
-          sendResponse({ data: word.replace(/ .*/, "") });
-        } else {
-          sendResponse({});
-        }
-      } else if (action === "zoomPage") {
-        document.body.style.zoom = request.zoomValue;
-      } else if (action === "italics-remove") {
-        const italics = document.getElementsByTagName("i");
-        for (let i = 0; i < italics.length; i++) {
-          italics[i].style.setProperty("font-style", "normal");
-          italics[i].style.setProperty("font-weight", "bold");
-        }
-      } else if (action === "underscore-remove") {
-        const underscore = document.getElementsByTagName("u");
-        const links = document.getElementsByTagName("a");
-        for (let i = 0; i < underscore.length; i++) {
-          underscore[i].style.setProperty("font-style", "normal");
-          underscore[i].style.setProperty("font-weight", "bold");
-          underscore[i].style.setProperty("text-decoration", "none");
-        }
-        for (let i = 0; i < links.length; i++) {
-          links[i].style.setProperty("text-decoration", "none");
-        }
-      } else if (action === "reset_italics_underscore") {
-        const italics = document.getElementsByTagName("i");
-        const underscore = document.getElementsByTagName("u");
-        const links = document.getElementsByTagName("a");
-        for (let i = 0; i < italics.length; i++) {
-          italics[i].style.removeProperty("font-style", "normal");
-          italics[i].style.removeProperty("font-weight", "bold");
-        }
-        for (let i = 0; i < underscore.length; i++) {
-          underscore[i].style.removeProperty("font-style", "normal");
-          underscore[i].style.removeProperty("font-weight", "bold");
-          underscore[i].style.removeProperty("text-decoration", "none");
-        }
-        for (let i = 0; i < links.length; i++) {
-          links[i].style.removeProperty("text-decoration", "none");
-        }
-      }
-      else if(action=="convertCase"){
-        document.getElementsByTagName("body")[0].style.setProperty("text-transform",request.payload);
-        console.log(request.payload);
-      }
-      else if(action == "slowautoscroll"){
-        startScroll(request.interval);
-      }
-      else if(action == "mediumautoscroll"){
-        startScroll(request.interval);
-      }
-      else if(action == "fastautoscroll"){
-        startScroll(request.interval);
-      }
+// Paragraph highlighting functionality
+function highlightParagraphs(type) {
+  const paragraphs = document.querySelectorAll('p');
+  
+  // Save original styles if not already saved
+  if (originalParagraphStyles.size === 0) {
+    paragraphs.forEach(p => {
+      originalParagraphStyles.set(p, {
+        backgroundColor: p.style.backgroundColor,
+        color: p.style.color
+      });
     });
-  },
-  false
-);
+  }
+  
+  paragraphs.forEach(p => {
+    if (type === 'highlight') {
+      p.style.color = 'black';
+      p.style.backgroundColor = 'yellow';
+    } else if (type === 'background') {
+      p.style.backgroundColor = 'lightblue';
+    } else if (type === 'remove') {
+      const originalStyle = originalParagraphStyles.get(p);
+      if (originalStyle) {
+        p.style.color = originalStyle.color;
+        p.style.removeProperty('background-color');
+      } else {
+        p.style.removeProperty('color');
+        p.style.removeProperty('background-color');
+      }
+    } else if (type === 'background-remove') {
+      const originalStyle = originalParagraphStyles.get(p);
+      if (originalStyle) {
+        p.style.backgroundColor = originalStyle.backgroundColor;
+      } else {
+        p.style.removeProperty('background-color');
+      }
+    }
+  });
+}
+
+// Zoom page functionality
+function zoomPage(zoomValue) {
+  document.body.style.zoom = zoomValue;
+}
+
+// Remove italics functionality
+function removeItalics() {
+  const elements = document.querySelectorAll('i, em, *[style*="italic"]');
+  
+  elements.forEach(el => {
+    if (el.style.fontStyle === 'italic') {
+      italicElements.push({
+        element: el,
+        originalStyle: el.style.fontStyle
+      });
+      el.style.fontStyle = 'normal';
+    } else if (el.tagName.toLowerCase() === 'i' || el.tagName.toLowerCase() === 'em') {
+      italicElements.push({
+        element: el,
+        originalHtml: el.outerHTML
+      });
+      el.outerHTML = el.innerHTML;
+    }
+  });
+}
+
+// Remove underscore functionality
+function removeUnderscore() {
+  const elements = document.querySelectorAll('u, *[style*="underline"]');
+  
+  elements.forEach(el => {
+    if (el.style.textDecoration === 'underline') {
+      underscoreElements.push({
+        element: el,
+        originalStyle: el.style.textDecoration
+      });
+      el.style.textDecoration = 'none';
+    } else if (el.tagName.toLowerCase() === 'u') {
+      underscoreElements.push({
+        element: el,
+        originalHtml: el.outerHTML
+      });
+      el.outerHTML = el.innerHTML;
+    }
+  });
+}
+
+// Reset italics and underscore functionality
+function resetItalicsUnderscore() {
+  // This is a simplified version as we cannot really restore the original elements
+  // But we can reload the page to reset everything
+  window.location.reload();
+}
+
+// Convert case functionality
+function convertCase(caseType) {
+  const textNodes = [];
+  
+  function getTextNodes(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodes.push(node);
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // Skip script and style elements
+      if (node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          getTextNodes(node.childNodes[i]);
+        }
+      }
+    }
+  }
+  
+  // Start from body to get all text nodes
+  getTextNodes(document.body);
+  
+  // Apply the case transformation to each text node
+  textNodes.forEach(textNode => {
+    if (textNode.nodeValue && textNode.nodeValue.trim() !== '') {
+      if (caseType === 'uppercase') {
+        textNode.nodeValue = textNode.nodeValue.toUpperCase();
+      } else if (caseType === 'lowercase') {
+        textNode.nodeValue = textNode.nodeValue.toLowerCase();
+      }
+    }
+  });
+  
+  // Log completion for debugging
+  console.log(`Case conversion to ${caseType} applied to ${textNodes.length} text nodes`);
+}
+
+// Read images functionality
+function readImages() {
+  const images = document.querySelectorAll('img[alt]');
+  let altTexts = [];
+  
+  images.forEach(img => {
+    if (img.alt && img.alt.trim() !== '') {
+      altTexts.push(img.alt);
+    }
+  });
+  
+  if (altTexts.length > 0) {
+    const msg = new SpeechSynthesisUtterance("Image descriptions: " + altTexts.join(". Next image: "));
+    synth.speak(msg);
+  } else {
+    const msg = new SpeechSynthesisUtterance("No image descriptions found on this page");
+    synth.speak(msg);
+  }
+}
+
+// Function to inject global CSS styles
+function injectGlobalCSS(cssRules) {
+  try {
+    // Remove any previous style element with our ID
+    const existingStyle = document.getElementById('octo-injected-styles');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Create a new style element
+    const style = document.createElement('style');
+    style.id = 'octo-injected-styles';
+    style.textContent = cssRules;
+    document.head.appendChild(style);
+  } catch (error) {
+    console.error('Error injecting global CSS:', error);
+  }
+}
+
+// Set global font size for the page
+function setGlobalFontSize(fontSize) {
+  const css = `
+    html, body, p, h1, h2, h3, h4, h5, h6, span, div, a, li, td, th, button, input, select, textarea {
+      font-size: ${fontSize} !important;
+    }
+  `;
+  injectGlobalCSS(css);
+}
+
+// Set global font family for the page
+function setGlobalFontFamily(fontFamily) {
+  const css = `
+    html, body, p, h1, h2, h3, h4, h5, h6, span, div, a, li, td, th, button, input, select, textarea {
+      font-family: ${fontFamily} !important;
+    }
+  `;
+  injectGlobalCSS(css);
+}
+
+// Message handling
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  try {
+    const action = request.action;
+    
+    switch (action) {
+      case "fontSize":
+        // Set global font size using CSS injection
+        setGlobalFontSize(request.fontSize);
+        break;
+
+      case "fontStyle":
+        // Set global font family using CSS injection
+        if (request.fontFamily) {
+          setGlobalFontFamily(request.fontFamily);
+        }
+        break;
+
+      case "image":
+        const images = getElements("img");
+        for (const img of images) {
+          setStyleProperty(img, "display", "none");
+        }
+        break;
+
+      case "imageAdd":
+        const imagesToShow = getElements("img");
+        for (const img of imagesToShow) {
+          setStyleProperty(img, "display", "block");
+        }
+        break;
+
+      case "text-to-speech":
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        const text = document.body?.innerText || "";
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.rate = parseFloat(request.rate) || 1.0;
+        synth.speak(msg);
+        break;
+
+      case "text-to-speech-selected":
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        const selection = window.getSelection()?.toString() || "";
+        if (selection) {
+          const msg = new SpeechSynthesisUtterance(selection);
+          msg.rate = parseFloat(request.rate) || 1.0;
+          synth.speak(msg);
+        }
+        break;
+
+      case "stop-speech":
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        break;
+
+      case "link-highlight":
+        const links = getElements("a");
+        for (const link of links) {
+          // Save original styles if not already saved
+          if (!originalLinkStyles.has(link)) {
+            originalLinkStyles.set(link, {
+              backgroundColor: link.style.backgroundColor,
+              fontSize: link.style.fontSize,
+              border: link.style.border,
+              color: link.style.color
+            });
+          }
+          setStyleProperty(link, "background-color", "yellow");
+          setStyleProperty(link, "color", "black");
+        }
+        break;
+
+      case "link-border-highlight":
+        const borderedLinks = getElements("a");
+        for (const link of borderedLinks) {
+          // Save original styles if not already saved
+          if (!originalLinkStyles.has(link)) {
+            originalLinkStyles.set(link, {
+              backgroundColor: link.style.backgroundColor,
+              fontSize: link.style.fontSize,
+              border: link.style.border,
+              color: link.style.color
+            });
+          }
+          setStyleProperty(link, "border", "2px solid red");
+        }
+        break;
+
+      case "link-highlight-remove":
+        const linksToReset = getElements("a");
+        for (const link of linksToReset) {
+          // Restore original styles
+          const originalStyle = originalLinkStyles.get(link);
+          if (originalStyle) {
+            setStyleProperty(link, "background-color", originalStyle.backgroundColor);
+            setStyleProperty(link, "font-size", originalStyle.fontSize);
+            setStyleProperty(link, "border", originalStyle.border);
+            setStyleProperty(link, "color", originalStyle.color);
+          } else {
+            setStyleProperty(link, "background-color", "transparent");
+            setStyleProperty(link, "font-size", "");
+            setStyleProperty(link, "border", "none");
+            setStyleProperty(link, "color", "");
+          }
+        }
+        break;
+
+      case "image-reader":
+        readImages();
+        break;
+
+      case "light-on-darkmode":
+        const darkModeHtml = document.querySelector("html");
+        const media = document.querySelectorAll("img, picture, video");
+        
+        if (request.modevalue === "dark") {
+          setStyleProperty(darkModeHtml, "filter", "invert(1) hue-rotate(180deg)");
+          media.forEach(item => {
+            setStyleProperty(item, "filter", "invert(1) hue-rotate(180deg)");
+          });
+        } else if (request.modevalue === "light") {
+          setStyleProperty(darkModeHtml, "filter", "invert(0) hue-rotate(0deg)");
+          media.forEach(item => {
+            setStyleProperty(item, "filter", "invert(0) hue-rotate(0deg)");
+          });
+        } else if (request.modevalue === "sepia") {
+          setStyleProperty(document.body, "background-color", "#f4ecd8");
+          setStyleProperty(document.body, "color", "#5b4636");
+        }
+        break;
+
+      case "backgroundColor":
+        const bgColorBody = document.querySelector("body");
+        if (bgColorBody) {
+          if (!backColor) {
+            backColor = bgColorBody.style.backgroundColor;
+          }
+          setStyleProperty(bgColorBody, "background-color", request.backgroundColor);
+        }
+        break;
+
+      case "revert-background-color":
+        const bodyToRevert = document.querySelector("body");
+        if (bodyToRevert) {
+          setStyleProperty(bodyToRevert, "background-color", backColor);
+        }
+        break;
+
+      case "fontColor":
+        const allElements = getElements("*");
+        if (!fontColor && allElements.length > 0) {
+          fontColor = allElements[0].style.color;
+        }
+        for (const element of allElements) {
+          setStyleProperty(element, "color", request.fontColor);
+        }
+        break;
+
+      case "revert-Font-color":
+        const firstElement = document.querySelector("*");
+        if (firstElement) {
+          setStyleProperty(firstElement, "color", fontColor);
+        }
+        break;
+
+      case "autoscroll":
+        console.log("Received autoscroll request with speed:", request.speed);
+        if (request.speed === "stop") {
+          console.log("Stopping autoscroll");
+          stopScroll();
+        } else {
+          console.log("Starting autoscroll with speed:", request.speed);
+          startAutoScroll(request.speed);
+        }
+        break;
+
+      case "slowautoscroll":
+      case "mediumautoscroll":
+      case "fastautoscroll":
+        startScroll(request.interval);
+        break;
+
+      case "para-highlighter":
+        highlightParagraphs("highlight");
+        break;
+
+      case "para-highlighter-background":
+        highlightParagraphs("background");
+        break;
+
+      case "para-highlighter-remove":
+        highlightParagraphs("remove");
+        break;
+
+      case "para-highlighter-background-remove":
+        highlightParagraphs("background-remove");
+        break;
+
+      case "zoomPage":
+        zoomPage(request.zoomValue);
+        break;
+
+      case "italics-remove":
+        removeItalics();
+        break;
+
+      case "underscore-remove":
+        removeUnderscore();
+        break;
+
+      case "reset_italics_underscore":
+        resetItalicsUnderscore();
+        break;
+
+      case "convertCase":
+        convertCase(request.caseType);
+        break;
+
+      case "select-text":
+        const textSelection = window.getSelection();
+        if (textSelection && textSelection.toString().trim() !== "") {
+          sendResponse({ data: textSelection.toString() });
+        } else {
+          sendResponse({ data: null });
+        }
+        return true; // Needed for async response
+
+      default:
+        console.warn(`Unknown action: ${action}`);
+    }
+
+    // Always send a response
+    sendResponse({ success: true });
+  } catch (error) {
+    console.error('Error handling message:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+  
+  // Return true to indicate we will send a response asynchronously
+  return true;
+});

@@ -279,3 +279,13 @@ margin-top:20px;
   margin: 10px !important;
   padding: 0 14px !important;
 }
+
+button.selected {
+  background-color: #ffa07a; /* Light salmon */
+  border: 2px solid #ff6347; /* Tomato */
+  font-weight: bold;
+}
+
+button.selected:after {
+  background-color: #ff6347; /* Tomato */
+}
