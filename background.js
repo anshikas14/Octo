@@ -103,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case 'darkMode':
-      handleDarkMode(request.mode);
+      handleDarkMode(request.mode, request.reset);
       break;
 
     case 'autoScroll':
@@ -152,6 +152,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'selectText':
       handleSelectText(sendResponse);
+      break;
+
+    case 'stopImageReader':
+      handleStopImageReader();
+      break;
+
+    case 'italicsRemove':
+      handleItalicsRemove();
+      break;
+
+    case 'underscoreRemove':
+      handleUnderscoreRemove();
+      break;
+
+    case 'resetItalicsUnderscore':
+      handleResetItalicsUnderscore();
       break;
   }
   return true;
@@ -264,12 +280,13 @@ async function handleFontColor(color) {
 }
 
 // Dark mode handler
-async function handleDarkMode(mode) {
+async function handleDarkMode(mode, reset = false) {
   const tab = await queryActiveTab();
   if (tab) {
     await sendMessageToTab(tab.id, {
       action: "light-on-darkmode",
-      modevalue: mode
+      modevalue: mode,
+      reset: reset
     });
   }
 }
@@ -370,6 +387,16 @@ async function handleSelectText(sendResponse) {
     await sendMessageToTab(tab.id, {
       action: "select-text"
     }, sendResponse);
+  }
+}
+
+// Stop image reader handler
+async function handleStopImageReader() {
+  const tab = await queryActiveTab();
+  if (tab) {
+    await sendMessageToTab(tab.id, {
+      action: "stop-image-reader"
+    });
   }
 }
 

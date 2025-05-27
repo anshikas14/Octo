@@ -1,3 +1,10 @@
+// Utility function for setting style properties
+function setStyleProperty(element, property, value) {
+  if (element && element.style) {
+    element.style.setProperty(property, value, 'important');
+  }
+}
+
 // Auto scroll functionality
 let scrollInterval = null;
 
@@ -125,13 +132,13 @@ let originalBackgroundColor = null;
 
 function changeBackgroundColor(color) {
   if (!originalBackgroundColor) {
-    originalBackgroundColor = document.body.style.backgroundColor;
+    originalBackgroundColor = document.body.style.backgroundColor || getComputedStyle(document.body).backgroundColor;
   }
   
-  if (color) {
-    document.body.style.backgroundColor = color;
-  } else {
+  if (color === 'initial' || color === 'revert') {
     document.body.style.backgroundColor = originalBackgroundColor || '';
+  } else if (color) {
+    document.body.style.backgroundColor = color;
   }
 }
 
@@ -140,24 +147,38 @@ let originalFontColor = null;
 
 function changeFontColor(color) {
   if (!originalFontColor) {
-    originalFontColor = document.body.style.color;
+    originalFontColor = document.body.style.color || getComputedStyle(document.body).color;
   }
   
-  if (color) {
-    document.body.style.color = color;
-  } else {
+  if (color === 'initial' || color === 'revert') {
     document.body.style.color = originalFontColor || '';
+  } else if (color) {
+    document.body.style.color = color;
   }
 }
 
 // Dark mode functionality
-function toggleDarkMode(mode) {
+let originalBodyStyles = null;
+
+function toggleDarkMode(mode, reset = false) {
+  // Save original styles if not already saved
+  if (!originalBodyStyles) {
+    originalBodyStyles = {
+      backgroundColor: document.body.style.backgroundColor || getComputedStyle(document.body).backgroundColor,
+      color: document.body.style.color || getComputedStyle(document.body).color
+    };
+  }
+  
+  if (reset) {
+    // Reset to original styles
+    document.body.style.backgroundColor = originalBodyStyles.backgroundColor;
+    document.body.style.color = originalBodyStyles.color;
+    return;
+  }
+  
   if (mode === 'dark') {
     document.body.style.backgroundColor = '#121212';
     document.body.style.color = '#ffffff';
-  } else if (mode === 'sepia') {
-    document.body.style.backgroundColor = '#f4ecd8';
-    document.body.style.color = '#5b4636';
   } else if (mode === 'light') {
     document.body.style.backgroundColor = '#ffffff';
     document.body.style.color = '#000000';
@@ -401,14 +422,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     changeFontColor(request.fontColor);
   }
   
-  // Dark mode handler
-  else if (request.action === 'light-on-darkmode') {
-    toggleDarkMode(request.modevalue);
-  }
-  
   // Image reader handler
   else if (request.action === 'image-reader') {
     readImages();
+  }
+  
+  // Stop image reader handler
+  else if (request.action === 'stop-image-reader') {
+    stopSpeech();
   }
   
   // Paragraph highlighter handlers

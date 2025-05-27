@@ -152,6 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const imgStopRead = document.querySelector(".img-stop-read");
+  if (imgStopRead) {
+    imgStopRead.addEventListener("click", () => {
+      imgRead.classList.remove('selected');
+      chrome.runtime.sendMessage({ action: 'stopImageReader' });
+    });
+  }
+
   // Reset images button
   const resetImages = document.querySelector(".reset-images");
   if (resetImages) {
@@ -282,9 +290,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Remove selected class from all mode buttons
       Array.from(modeButtons).forEach(b => b.classList.remove('selected'));
       
+      // Reset to light mode and clear any custom styles
       chrome.runtime.sendMessage({
         action: 'darkMode',
-        mode: 'light'
+        mode: 'light',
+        reset: true
       });
     });
   }
@@ -297,7 +307,11 @@ document.addEventListener('DOMContentLoaded', () => {
       paraHighlighterRemove.classList.remove('selected');
       paraHighlighterBackground.classList.remove('selected');
       paraHighlighterBackgroundRemove.classList.remove('selected');
-      chrome.runtime.sendMessage({ action: 'paraHighlighter', type: 'highlight' });
+      chrome.runtime.sendMessage({ 
+        action: 'paraHighlighter', 
+        type: 'highlight',
+        style: 'border: 2px solid #ff0000;'
+      });
     });
   }
 
@@ -308,7 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
       paraHighlighter.classList.remove('selected');
       paraHighlighterBackground.classList.remove('selected');
       paraHighlighterBackgroundRemove.classList.remove('selected');
-      chrome.runtime.sendMessage({ action: 'paraHighlighter', type: 'remove' });
+      chrome.runtime.sendMessage({ 
+        action: 'paraHighlighter', 
+        type: 'remove',
+        style: 'none'
+      });
     });
   }
 
@@ -412,21 +430,23 @@ document.addEventListener('DOMContentLoaded', () => {
   if (selectText) {
     selectText.addEventListener("click", () => {
       const updateDefinition = document.querySelector(".select-text-definition");
-      chrome.runtime.sendMessage({ action: 'selectText' }, async (response) => {
+      chrome.runtime.sendMessage({ action: 'selectText' }, function(response) {
         if (response && response.data) {
-          const word = response.data;
+          const word = response.data.trim();
           const api = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-          try {
-            const result = await fetch(api + word);
-            const json = await result.json();
-            if (json && json[0] && json[0].meanings && json[0].meanings[0] && json[0].meanings[0].definitions) {
-              updateDefinition.innerHTML = word + " :- " + json[0].meanings[0].definitions[0].definition;
-            } else {
-              updateDefinition.innerHTML = "Word not found!";
-            }
-          } catch (error) {
-            updateDefinition.innerHTML = "Error fetching definition!";
-          }
+          fetch(api + word)
+            .then(result => result.json())
+            .then(json => {
+              if (json && json[0] && json[0].meanings && json[0].meanings[0] && json[0].meanings[0].definitions) {
+                updateDefinition.innerHTML = `<strong>${word}</strong>: ${json[0].meanings[0].definitions[0].definition}`;
+              } else {
+                updateDefinition.innerHTML = "Word not found!";
+              }
+            })
+            .catch(error => {
+              updateDefinition.innerHTML = "Error fetching definition!";
+              console.error('Dictionary API error:', error);
+            });
         } else {
           updateDefinition.innerHTML = "Please select a word to get its definition!";
         }
@@ -569,6 +589,103 @@ document.addEventListener('DOMContentLoaded', () => {
       utter.volume = 0.5;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
+    });
+  }
+
+  // Color changers
+  const backgroundColorChanger = document.getElementById("backgroundColorChanger");
+  if (backgroundColorChanger) {
+    backgroundColorChanger.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const color = backgroundColorChanger.querySelector("input[name='color']").value;
+      chrome.runtime.sendMessage({
+        action: 'backgroundColor',
+        color: color
+      });
+    });
+  }
+
+  const fontColorChanger = document.getElementById("fontColorChanger");
+  if (fontColorChanger) {
+    fontColorChanger.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const color = fontColorChanger.querySelector("input[name='color']").value;
+      chrome.runtime.sendMessage({
+        action: 'fontColor',
+        color: color
+      });
+    });
+  }
+
+  const revertBackgroundColor = document.querySelector(".revert-background-color");
+  if (revertBackgroundColor) {
+    revertBackgroundColor.addEventListener("click", () => {
+      chrome.runtime.sendMessage({
+        action: 'backgroundColor',
+        color: 'initial'
+      });
+    });
+  }
+
+  const revertFontColor = document.querySelector(".revert-Font-color");
+  if (revertFontColor) {
+    revertFontColor.addEventListener("click", () => {
+      chrome.runtime.sendMessage({
+        action: 'fontColor',
+        color: 'initial'
+      });
+    });
+  }
+
+  // Remove emphasis buttons
+  const removeItalics = document.querySelector(".remove-italics");
+  if (removeItalics) {
+    removeItalics.addEventListener("click", () => {
+      removeItalics.classList.add('selected');
+      setTimeout(() => removeItalics.classList.remove('selected'), 1000);
+      chrome.runtime.sendMessage({ action: 'italicsRemove' });
+    });
+  }
+
+  const removeUnderscore = document.querySelector(".remove-underscore");
+  if (removeUnderscore) {
+    removeUnderscore.addEventListener("click", () => {
+      removeUnderscore.classList.add('selected');
+      setTimeout(() => removeUnderscore.classList.remove('selected'), 1000);
+      chrome.runtime.sendMessage({ action: 'underscoreRemove' });
+    });
+  }
+
+  const resetItalicsUnderscore = document.querySelector(".reset-italics-and-underscore");
+  if (resetItalicsUnderscore) {
+    resetItalicsUnderscore.addEventListener("click", () => {
+      removeItalics.classList.remove('selected');
+      removeUnderscore.classList.remove('selected');
+      chrome.runtime.sendMessage({ action: 'resetItalicsUnderscore' });
+    });
+  }
+
+  // Translation language selection
+  const sourceLanguage = document.getElementById("sourceLanguage");
+  const targetLanguage = document.getElementById("targetLanguage");
+  
+  if (sourceLanguage && targetLanguage) {
+    sourceLanguage.addEventListener("change", () => {
+      chrome.storage.local.set({ sourceLanguage: sourceLanguage.value });
+    });
+    
+    targetLanguage.addEventListener("change", () => {
+      chrome.storage.local.set({ targetLanguage: targetLanguage.value });
+    });
+    
+    // Load saved language preferences
+    chrome.storage.local.get(['sourceLanguage', 'targetLanguage'], (result) => {
+      if (result.sourceLanguage) {
+        sourceLanguage.value = result.sourceLanguage;
+      }
+      if (result.targetLanguage) {
+        targetLanguage.value = result.targetLanguage;
+      }
     });
   }
 }); 
