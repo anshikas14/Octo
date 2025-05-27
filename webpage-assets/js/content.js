@@ -1,12 +1,27 @@
 const synth = window.speechSynthesis;
 let backColor = "";
-let fontColor = "";
 let originalLineHeight = 1;
 let scrollerID = null;
 let originalLinkStyles = new Map();
 let originalParagraphStyles = new Map();
 let italicElements = [];
 let underscoreElements = [];
+
+// Store initial styles for various elements
+let initialElementStyles = new Map();
+const elementsToTrack = "p, span, div, h1, h2, h3, h4, h5, h6, a, li, body, html";
+
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.body;
+  // Store initial styles for tracked elements
+  document.querySelectorAll(elementsToTrack).forEach(el => {
+    const computedStyle = window.getComputedStyle(el);
+    initialElementStyles.set(el, {
+      fontFamily: computedStyle.fontFamily,
+      color: computedStyle.color
+    });
+  });
+});
 
 // Utility function to safely get elements
 function getElements(tagName) {
@@ -19,9 +34,9 @@ function getElements(tagName) {
 }
 
 // Utility function to safely set style properties
-function setStyleProperty(element, property, value) {
+function setStyleProperty(element, property, value, important = false) {
   try {
-    element.style.setProperty(property, value);
+    element.style.setProperty(property, value, important ? 'important' : '');
   } catch (error) {
     console.error(`Error setting ${property}:`, error);
   }
@@ -296,8 +311,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
 
       case "fontStyle":
-        // Set global font family using CSS injection
-        if (request.fontFamily) {
+        if (!request.fontFamily || request.fontStyle === "Default") {
+          // Restore initial font family for all tracked elements
+          initialElementStyles.forEach((style, el) => {
+            if (el && el.style && style.fontFamily) {
+              el.style.setProperty("font-family", style.fontFamily, "important");
+            } else if (el && el.style) {
+              el.style.removeProperty("font-family");
+            }
+          });
+           // Remove injected global style if any
+           const existingStyleElement = document.getElementById('octo-injected-styles');
+           if (existingStyleElement) {
+               existingStyleElement.remove();
+           }
+        } else if (request.fontFamily) {
           setGlobalFontFamily(request.fontFamily);
         }
         break;
@@ -339,6 +367,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
 
       case "stop-speech":
+        if (synth.speaking) {
+          synth.cancel();
+        }
+        break;
+
+      case "stop-image-reader":
         if (synth.speaking) {
           synth.cancel();
         }
@@ -401,22 +435,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
 
       case "light-on-darkmode":
-        const darkModeHtml = document.querySelector("html");
+        const htmlEl = document.documentElement; // Use documentElement for <html>
         const media = document.querySelectorAll("img, picture, video");
+
+        // Reset body classes first
+        document.body.classList.remove("dark-mode", "sepia-mode");
         
+        // Reset filters on html and media elements before applying new ones
+        setStyleProperty(htmlEl, "filter", "none");
+        media.forEach(item => {
+          setStyleProperty(item, "filter", "none");
+        });
+
         if (request.modevalue === "dark") {
-          setStyleProperty(darkModeHtml, "filter", "invert(1) hue-rotate(180deg)");
+          setStyleProperty(htmlEl, "filter", "invert(1) hue-rotate(180deg)");
           media.forEach(item => {
+            // Invert media again to make them look normal in dark mode
             setStyleProperty(item, "filter", "invert(1) hue-rotate(180deg)");
           });
+          document.body.classList.add("dark-mode");
         } else if (request.modevalue === "light") {
-          setStyleProperty(darkModeHtml, "filter", "invert(0) hue-rotate(0deg)");
-          media.forEach(item => {
-            setStyleProperty(item, "filter", "invert(0) hue-rotate(0deg)");
-          });
+          // Filters are already reset to "none", effectively making it light mode.
+          // No specific class needed for light mode by default.
         } else if (request.modevalue === "sepia") {
-          setStyleProperty(document.body, "background-color", "#f4ecd8");
-          setStyleProperty(document.body, "color", "#5b4636");
+          setStyleProperty(htmlEl, "filter", "sepia(1)");
+          media.forEach(item => {
+            setStyleProperty(item, "filter", "sepia(1)"); // Apply sepia to media as well
+          });
+          document.body.classList.add("sepia-mode");
         }
         break;
 
@@ -438,19 +484,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
 
       case "fontColor":
-        const allElements = getElements("*");
-        if (!fontColor && allElements.length > 0) {
-          fontColor = allElements[0].style.color;
-        }
-        for (const element of allElements) {
-          setStyleProperty(element, "color", request.fontColor);
-        }
-        break;
+        if (request.fontColor === "initial") {
+          // Restore initial font color for all tracked elements
+          const allCurrentElements = document.querySelectorAll(elementsToTrack);
+          allCurrentElements.forEach(el => {
+            if (el && el.style) { // Ensure element and style object exist
+              if (initialElementStyles.has(el)) {
+                // This element was present at DOMContentLoaded, restore its captured style
+                const originalStyle = initialElementStyles.get(el);
+                if (originalStyle.color) {
+                  el.style.setProperty("color", originalStyle.color, "important");
+                } else {
+                  // This case is less likely if computedStyle.color was always valid
+                  el.style.removeProperty("color");
+                }
+              } else {
+                // This element was added after DOMContentLoaded.
+                // We don't have its "original" color.
+                // The "Change Font Color" might have set an inline style on it.
+                // To revert, we should remove that inline style.
+                el.style.removeProperty("color");
+              }
+            }
+          });
 
-      case "revert-Font-color":
-        const firstElement = document.querySelector("*");
-        if (firstElement) {
-          setStyleProperty(firstElement, "color", fontColor);
+          // Neutralize global injected styles affecting color
+          const globalStyleSheet = document.getElementById('octo-injected-styles');
+          if (globalStyleSheet && globalStyleSheet.sheet) {
+            try {
+              for (let i = globalStyleSheet.sheet.cssRules.length - 1; i >= 0; i--) {
+                const rule = globalStyleSheet.sheet.cssRules[i];
+                if (rule.style && rule.style.getPropertyValue('color')) {
+                  rule.style.removeProperty('color');
+                }
+              }
+            } catch (e) {
+              console.warn("Could not modify CSS rules in octo-injected-styles for color reset:", e);
+            }
+          }
+        } else {
+          // Apply new font color to all elements
+          document.querySelectorAll(elementsToTrack).forEach(el => {
+            setStyleProperty(el, "color", request.fontColor, true); // Apply with !important
+          });
         }
         break;
 
@@ -530,3 +606,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Return true to indicate we will send a response asynchronously
   return true;
 });
+
