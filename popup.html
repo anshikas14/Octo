@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OCTO!</title>
     <link rel="stylesheet" href="./css/styles.css" />
+    <script src="popup.js" defer></script>
   </head>
 
   <body class="dark-mode">
@@ -66,53 +67,65 @@
 
     <section id="mode">
       <h1><span class="speaker">🔊 </span>Mode</h1>
-
-        <button  value="lightmode" class="modes">Light Mode</button>
-        <button  value="darkmode" class="modes">Dark Mode</button>
-
-      
+      <div class="mode-buttons">
+        <button value="light" class="modes">Light Mode</button>
+        <button value="dark" class="modes">Dark Mode</button>
+        <button value="sepia" class="modes">Sepia Mode</button>
+        <button class="reset-mode">Reset</button>
+      </div>
     </section>
 
     <section id="fonts">
       <h1><span class="speaker">🔊 </span>FONT SIZE</h1>
-      <button class="fontSize">12px</button>
-      <button class="fontSize">22px</button>
-      <button class="fontSize">26px</button>
-      <button class="fontSize">30px</button>
-      <button class="fontSize">40px</button>
-      <button class="fontSize">60px</button>
+      <div class="font-size-buttons">
+        <button class="fontSize">Default</button>
+        <button class="fontSize">12px</button>
+        <button class="fontSize">22px</button>
+        <button class="fontSize">26px</button>
+        <button class="fontSize">30px</button>
+        <button class="fontSize">40px</button>
+        <button class="fontSize">60px</button>
+        <button class="reset-font-size">Reset</button>
+      </div>
     </section>
 
     <section id="font-style">
       <h1><span class="speaker">🔊 </span>FONT STYLE</h1>
-      <button class="fontStyle">Arial</button>
-      <button class="fontStyle">Baskerville</button>
-      <button class="fontStyle">Calibri</button>
-      <button class="fontStyle">Garamond</button>
-      <button class="fontStyle">Trebuchet MS</button>
-      <button class="fontStyle">Verdana</button>
-      <button class="fontStyle">Georgia</button>
-      <button class="fontStyle">Times New Roman</button>
-      <button class="fontStyle">Helvetica</button>
-      <button class="fontStyle">Monaco</button>
-      <button class="fontStyle">OpenSans</button>
-      <button class="fontStyle">Tahoma</button>
+      <div class="font-style-buttons">
+        <button class="fontStyle">Arial</button>
+        <button class="fontStyle">Baskerville</button>
+        <button class="fontStyle">Calibri</button>
+        <button class="fontStyle">Garamond</button>
+        <button class="fontStyle">Trebuchet MS</button>
+        <button class="fontStyle">Verdana</button>
+        <button class="fontStyle">Georgia</button>
+        <button class="fontStyle">Times New Roman</button>
+        <button class="fontStyle">Helvetica</button>
+        <button class="fontStyle">Monaco</button>
+        <button class="fontStyle">OpenSans</button>
+        <button class="fontStyle">Tahoma</button>
+        <button class="reset-font-style">Reset</button>
+      </div>
     </section>
 
     <section id="images">
       <h1><span class="speaker">🔊 </span>IMAGES</h1>
       <div class="images">
-      <button class="img-remmover">Remove images</button>
-      <button class="img-add">Add images</button>
-      <button class="img-read">Read Out Images</button>
+        <button class="img-remmover">Remove images</button>
+        <button class="img-add">Add images</button>
+        <button class="img-read">Read Out Images</button>
+        <button class="reset-images">Reset</button>
       </div>
     </section>
 
     <section id="listen_to_web_page">
       <h1><span class="speaker">🔊 </span>LISTEN TO WEB PAGE</h1>
-      <button class="text-to-speech">Speak</button>
-     
-      <button class="text-to-speech-selected">SpeakSelected</button>
+      <div class="speech-buttons">
+        <button class="text-to-speech">Speak</button>
+        <button class="text-to-speech-selected">SpeakSelected</button>
+        <button class="stop-speech">Stop</button>
+        <button class="reset-speech">Reset</button>
+      </div>
       <div id="rate-control">
         <label for="rate">Rate:</label>
         <input type="range" min="0.5" max="2" value="1" step="0.1" id="rate" />
@@ -121,24 +134,29 @@
 
     <section id="paragraphs">
       <h1><span class="speaker">🔊 </span>PARAGRAPHS</h1>
-      <button class="para-highlighter">Highlight Paragraphs Border</button>
-      <button class="para-highlighter-remove">
-        Remove Paragraph Border Highlighting
-      </button>
-
-      <button class="para-highlighter-background">
-        Highlight Paragraphs Background
-      </button>
-      <button class="para-highlighter-background-remove">
-        Remove Paragraph Background Highlighting
-      </button>
+      <div class="paragraph-buttons">
+        <button class="para-highlighter">Highlight Paragraphs Border</button>
+        <button class="para-highlighter-remove">
+          Remove Paragraph Border Highlighting
+        </button>
+        <button class="para-highlighter-background">
+          Highlight Paragraphs Background
+        </button>
+        <button class="para-highlighter-background-remove">
+          Remove Paragraph Background Highlighting
+        </button>
+        <button class="reset-paragraphs">Reset All</button>
+      </div>
     </section>
 
     <section id="links">
       <h1><span class="speaker">🔊 </span>LINKS</h1>
-      <button class="link">Highlight Links</button>
-      <button class="border">Show Borders</button>
-      <button class="remove-link-hg">Remove Link Highlights/Borders</button>
+      <div class="links-buttons">
+        <button class="link">Highlight Links</button>
+        <button class="border">Show Borders</button>
+        <button class="remove-link-hg">Remove Link Highlights/Borders</button>
+        <button class="reset-links">Reset</button>
+      </div>
     </section>
 
     <section id="colors">
@@ -168,18 +186,22 @@
       </a>
     </section>
 
-    <section style="margin-top:40px;" id="auto-scrolling">
+    <section id="auto-scrolling" style="margin-top:40px;">
       <h1>Auto-Scrolling</h1>
       <h2>Press Enter to Start Auto Scrolling and again press Enter to stop.</h2>
-      <button class="autoscroll" id="slow_btn">Slow Speed</button>
-      <button class="autoscroll" id="medium_btn">Medium Speed</button>
-      <button class="autoscroll" id="fast_btn">Fast speed</button>
+      <div class="autoscroll-buttons">
+        <button class="autoscroll" id="slow_btn">Slow Speed</button>
+        <button class="autoscroll" id="medium_btn">Medium Speed</button>
+        <button class="autoscroll" id="fast_btn">Fast speed</button>
+        <button class="autoscroll" id="stop_btn">Stop Scrolling</button>
+        <button class="reset-autoscroll">Reset</button>
+      </div>
     </section>
 
     <section id="magnifier">
       <h1><span class="speaker">🔊 </span>MAGNIFIER</h1>
       <div class="magnifier">
-        <button id="magni-inc">-</button>
+        <button id="magni-inc">+</button>
         <input
           type="range"
           min="30"
@@ -188,7 +210,7 @@
           step="10"
           id="magni"
         />
-        <button id="magni-dec">+</button>
+        <button id="magni-dec">-</button>
       </div>
       <div class="magni-cnt">
         <div class="show-zoom-value">100%</div>
@@ -208,9 +230,8 @@
       <div class="convertBtns">
         <button id="upper-case-btn">Convert to Uppercase</button>
         <button id="lower-case-btn">Convert to Lowercase</button>
+        <button class="reset-case">Reset</button>
       </div>
     </section>
   </body>
-
-  <script src="background.js"></script>
 </html>
